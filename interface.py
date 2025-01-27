@@ -1,7 +1,7 @@
 # src/interface.py
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, colorchooser, messagebox  # Added colorchooser
 from PIL import Image, ImageTk
 import threading
 import cv2
@@ -150,7 +150,8 @@ class MakeupApp:
         self.running = True
         self.thread = threading.Thread(
             target=self.makeup_tryon.start_webcam, 
-            args=(self.update_webcam_feed, self.visualize_var.get(), alpha)
+            args=(self.update_webcam_feed, self.visualize_var.get()),  # positional args
+            kwargs={'alpha': alpha}  # keyword args
         )
         self.thread.start()
         print("Webcam feed started.")
@@ -180,7 +181,7 @@ class MakeupApp:
         self.current_frame = frame.copy()
 
     def pick_makeup_color(self):
-        color_code = filedialog.askcolor(title="Choose Makeup Color")
+        color_code = colorchooser.askcolor(title="Choose Makeup Color")  # Corrected here
         if color_code and color_code[0]:
             r, g, b = color_code[0]
             self.makeup_tryon.lipstick_color = (int(b), int(g), int(r))  # Update BGR color
