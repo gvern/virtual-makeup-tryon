@@ -13,8 +13,25 @@ A proof of concept for a real-time virtual makeup try-on application. This appli
 - **Real-Time Performance:** Processes webcam feed and applies makeup augmentation live.
 
 ## Repository Structure
-
-gvern-virtual-makeup-tryon/ ├── README.md ├── interface.py ├── main.py ├── requirements.txt ├── webcam_test.py ├── assets/ │ └── reference_images/ ├── src/ │ ├── init.py │ ├── face_detection.py │ ├── face_parsing.py │ └── makeup_transfer.py └── utils/ ├── init.py ├── utils.py └── visualization.py
+```
+gvern-virtual-makeup-tryon/
+├── README.md
+├── interface.py
+├── main.py
+├── requirements.txt
+├── webcam_test.py
+├── assets/
+│   └── reference_images/
+├── src/
+│   ├── __init__.py
+│   ├── face_detection.py
+│   ├── face_parsing.py
+│   └── makeup_transfer.py
+└── utils/
+    ├── __init__.py
+    ├── utils.py
+    └── visualization.py
+```
 
 
 - **interface.py:** The main GUI application that users interact with.
