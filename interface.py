@@ -7,20 +7,23 @@ import threading
 import cv2
 from main import MakeupTryOn
 import numpy as np
+import torch
 
 class MakeupApp:
     def __init__(self, root):
         print("Initializing MakeupApp GUI...")
         self.root = root
         self.root.title("Real-Time Virtual Makeup Try-On")
-        self.root.geometry("1000x600")  # Increased width for better layout
+        self.root.geometry("1000x700")  # Increased height for additional elements
         
         # Initialize MakeupTryOn
-        self.makeup_tryon = MakeupTryOn(device='cpu')  # Change to 'cuda' if GPU is available
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f"Using device: {device}")
+        self.makeup_tryon = MakeupTryOn(device=device, frame_width=640, frame_height=480)
         
         # Reference Image Frame
         self.ref_frame = tk.LabelFrame(root, text="Reference Image", padx=10, pady=10)
-        self.ref_frame.pack(side=tk.LEFT, padx=10, pady=10)
+        self.ref_frame.pack(side=tk.TOP, padx=10, pady=10)
         
         self.ref_image_label = tk.Label(self.ref_frame)
         self.ref_image_label.pack()
@@ -28,9 +31,16 @@ class MakeupApp:
         self.upload_button = tk.Button(self.ref_frame, text="Upload Reference Image", command=self.upload_image)
         self.upload_button.pack(pady=10)
         
+        # Lipstick Color Display
+        self.color_frame = tk.LabelFrame(root, text="Extracted Lipstick Color", padx=10, pady=10)
+        self.color_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        
+        self.color_display = tk.Canvas(self.color_frame, width=100, height=50)
+        self.color_display.pack(pady=5)
+        
         # Webcam Feed Frame
         self.webcam_frame = tk.LabelFrame(root, text="Webcam Feed", padx=10, pady=10)
-        self.webcam_frame.pack(side=tk.RIGHT, padx=10, pady=10)
+        self.webcam_frame.pack(side=tk.TOP, padx=10, pady=10)
         
         self.webcam_label = tk.Label(self.webcam_frame)
         self.webcam_label.pack()
@@ -70,6 +80,12 @@ class MakeupApp:
                 img = img.resize((250, 250), Image.LANCZOS)  # Updated here
                 self.ref_photo = ImageTk.PhotoImage(img)
                 self.ref_image_label.configure(image=self.ref_photo)
+                
+                # Display the lipstick color
+                b, g, r = self.makeup_tryon.lipstick_color
+                color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+                self.color_display.create_rectangle(10, 10, 90, 40, fill=color_hex, outline=color_hex)
+                print(f"Lipstick Color Displayed: {color_hex}")
                 
                 messagebox.showinfo("Success", "Reference image loaded successfully!")
                 print("Reference image loaded and displayed.")

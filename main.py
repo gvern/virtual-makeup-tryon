@@ -6,7 +6,7 @@ from src.face_parsing import FaceParser
 from src.makeup_transfer import MakeupTransfer
 
 class MakeupTryOn:
-    def __init__(self, device='cpu'):
+    def __init__(self, device='cpu', frame_width=640, frame_height=480):
         # Initialize components
         self.face_detector = FaceDetector()
         self.face_parser = FaceParser(device=device)
@@ -14,6 +14,8 @@ class MakeupTryOn:
         self.lipstick_color = None
         self.cap = None
         self.running = False
+        self.frame_width = frame_width
+        self.frame_height = frame_height
 
     def load_reference_image(self, reference_path):
         # Load reference image
@@ -45,6 +47,10 @@ class MakeupTryOn:
         if not self.cap.isOpened():
             raise ValueError("Unable to access the webcam.")
         
+        # Set frame dimensions
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
+        
         self.running = True
         while self.running:
             ret, frame = self.cap.read()
@@ -66,6 +72,7 @@ class MakeupTryOn:
                     )
                     # Overlay the segmentation map (optional)
                     frame = cv2.addWeighted(frame, 0.7, color_seg, 0.3, 0)
+                    print("Makeup applied with segmentation visualization.")
                 else:
                     parsing_map = self.face_parser.parse(frame)
                     # Apply makeup
@@ -76,6 +83,9 @@ class MakeupTryOn:
                         target_region=12, 
                         alpha=0.6
                     )
+                    print("Makeup applied.")
+            else:
+                print("No face detected. Skipping makeup application.")
             
             # Convert the frame to RGB for Tkinter
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

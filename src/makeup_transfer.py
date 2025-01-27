@@ -7,7 +7,7 @@ class MakeupTransfer:
     def __init__(self):
         pass
     
-    def extract_makeup_color(self, reference_image, parsing_map, target_region=10):
+    def extract_makeup_color(self, reference_image, parsing_map, target_region=12):
         """
         Extract average color from the target region in the reference image.
 
@@ -17,14 +17,15 @@ class MakeupTransfer:
         :return: BGR color tuple
         """
         mask = (parsing_map == target_region).astype(np.uint8) * 255
-        # Optional: Apply morphological operations to clean the mask
+        # Apply morphological operations to clean the mask
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
         
         # Compute the mean color within the mask
         mean_color = cv2.mean(reference_image, mask=mask)[:3]
+        print(f"Extracted Makeup Color (BGR): {mean_color}")
         return mean_color  # BGR
     
-    def apply_makeup(self, target_image, parsing_map, makeup_color, target_region=10, alpha=0.6):
+    def apply_makeup(self, target_image, parsing_map, makeup_color, target_region=12, alpha=0.6):
         """
         Apply the makeup color to the target region.
 
@@ -48,7 +49,10 @@ class MakeupTransfer:
         # Blend the overlay with the target image using the mask
         blended = cv2.addWeighted(overlay, alpha, target_image, 1 - alpha, 0)
         
-        # Combine the blended region with the original image
+        # Apply the mask to restrict makeup to the target region
         makeup_applied = np.where(mask[:, :, np.newaxis] == 255, blended, target_image)
+        
+        # Log the application
+        print(f"Applying makeup with color {makeup_color} on region {target_region}")
         
         return makeup_applied
