@@ -12,10 +12,19 @@ A proof of concept for a real-time virtual makeup try-on application using BiSeN
 ## Repository Structure
 
 
-virtual-makeup-tryon/ ├── README.md ├── requirements.txt ├── models/ │ └── bisenet.pth ├── assets/ │ └── reference_images/ ├── src/ │ ├── face_detection.py │ ├── face_parsing.py │ ├── makeup_transfer.py │ └── main.py ├── utils/ │ ├── utils.py │ └── visualization.py └── scripts/ └── download_models.sh
-
-bash
-Copier
+virtual-makeup-tryon/
+├── README.md
+├── requirements.txt
+├── assets/
+│   └── reference_images/
+├── src/
+│   ├── face_detection.py
+│   ├── face_parsing.py
+│   ├── makeup_transfer.py
+│   └── main.py
+├── utils/
+│   ├── utils.py
+│   └── visualization.py
 
 ## Setup Instructions
 

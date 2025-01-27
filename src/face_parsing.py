@@ -1,44 +1,46 @@
 import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
-from PIL import Image
-import numpy as np
+from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
 import cv2
-
-class BiSeNet(nn.Module):
-    def __init__(self, n_classes=19):
-        super(BiSeNet, self).__init__()
-        # Define the BiSeNet architecture here or load from a repository
-        # For simplicity, let's assume you have the model defined elsewhere
-        # and you are loading the weights
-        # Example:
-        from model import BiSeNetModel  # Replace with actual import
-        self.bisenet = BiSeNetModel(n_classes=n_classes)
-    
-    def forward(self, x):
-        return self.bisenet(x)
+import numpy as np
 
 class FaceParser:
-    def __init__(self, model_path='models/bisenet.pth', device='cpu'):
+    def __init__(self, model_name='jonathandinu/face-parsing', device='cpu'):
         self.device = torch.device(device)
-        self.n_classes = 19
-        self.model = BiSeNet(self.n_classes)
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        # Initialize the feature extractor and model from HuggingFace
+        self.feature_extractor = SegformerFeatureExtractor.from_pretrained(model_name)
+        self.model = SegformerForSemanticSegmentation.from_pretrained(model_name)
         self.model.to(self.device)
         self.model.eval()
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((512, 512)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225]),
-        ])
     
     def parse(self, image):
-        # image: BGR image (from OpenCV)
-        img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        img = self.transform(img).unsqueeze(0).to(self.device)
+        """
+        Perform face parsing on the input image.
+
+        :param image: BGR image (from OpenCV)
+        :return: Segmentation map as a NumPy array with shape (H, W)
+        """
+        # Convert BGR to RGB
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # Prepare the image for the model
+        inputs = self.feature_extractor(images=image_rgb, return_tensors="pt")
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        
         with torch.no_grad():
-            out = self.model(img)[0]
-            parsing = out.squeeze(0).cpu().numpy().argmax(0)
-        return parsing  # Shape: (512, 512)
+            outputs = self.model(**inputs)
+        
+        # Get the predicted segmentation logits
+        logits = outputs.logits
+        
+        # Upsample logits to match the input image size
+        upsampled_logits = torch.nn.functional.interpolate(
+            logits,
+            size=image.shape[:2],
+            mode='bilinear',
+            align_corners=False
+        )
+        
+        # Get the segmentation map by taking the argmax
+        segmentation = upsampled_logits.argmax(dim=1).squeeze().cpu().numpy()
+        
+        return segmentation  # Shape: (H, W)

@@ -26,9 +26,10 @@ def main():
     lipstick_color = makeup_transfer.extract_makeup_color(
         reference_image, 
         parsing_map_ref, 
-        target_region=13  # Assuming 13 is the lip region
+        target_region=10
     )
-    print(f"Extracted Lipstick Color (BGR): {lipstick_color}")
+    print(f"Extracted lipstick color (BGR): {lipstick_color}")
+
     
     # Start video capture
     cap = cv2.VideoCapture(0)  # Use 0 for webcam, replace with video file if needed
@@ -47,9 +48,10 @@ def main():
                 frame, 
                 parsing_map, 
                 makeup_color=lipstick_color, 
-                target_region=13, 
+                target_region=10,  # Updated to match the new model's lip label
                 alpha=0.6
             )
+    
         
         # Display the resulting frame
         cv2.imshow('Virtual Makeup Try-On', frame)

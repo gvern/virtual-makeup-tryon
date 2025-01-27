@@ -6,3 +6,5 @@ pillow
 dlib
 mediapipe
 torchsummary
+transformers
+huggingface_hub
