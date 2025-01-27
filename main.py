@@ -27,17 +27,17 @@ class MakeupTryOn:
             raise ValueError("No face detected in the reference image.")
         
         # Parse face
-        parsing_map_ref = self.face_parser.parse(reference_image)
+        parsing_map_ref, _ = self.face_parser.parse(reference_image, return_full_map=True)
         
         # Extract lipstick color (Assuming label 12 corresponds to lips)
         self.lipstick_color = self.makeup_transfer.extract_makeup_color(
             reference_image, 
             parsing_map_ref, 
-            target_region=10 # Update if label differs
+            target_region=12  # Update if label differs
         )
         print(f"Extracted Lipstick Color (BGR): {self.lipstick_color}")
 
-    def start_webcam(self, display_callback):
+    def start_webcam(self, display_callback, visualize_segmentation=False):
         if self.lipstick_color is None:
             raise ValueError("Reference image not loaded. Please load a reference image first.")
         
@@ -54,15 +54,28 @@ class MakeupTryOn:
             # Detect face in the frame
             faces = self.face_detector.detect_faces(frame)
             if faces:
-                parsing_map = self.face_parser.parse(frame)
-                # Apply makeup
-                frame = self.makeup_transfer.apply_makeup(
-                    frame, 
-                    parsing_map, 
-                    makeup_color=self.lipstick_color, 
-                    target_region=10,  # Update if label differs
-                    alpha=0.6
-                )
+                if visualize_segmentation:
+                    parsing_map, color_seg = self.face_parser.parse(frame, return_full_map=True)
+                    # Apply makeup
+                    frame = self.makeup_transfer.apply_makeup(
+                        frame, 
+                        parsing_map, 
+                        makeup_color=self.lipstick_color, 
+                        target_region=12,  # Update if label differs
+                        alpha=0.6
+                    )
+                    # Overlay the segmentation map (optional)
+                    frame = cv2.addWeighted(frame, 0.7, color_seg, 0.3, 0)
+                else:
+                    parsing_map = self.face_parser.parse(frame)
+                    # Apply makeup
+                    frame = self.makeup_transfer.apply_makeup(
+                        frame, 
+                        parsing_map, 
+                        makeup_color=self.lipstick_color, 
+                        target_region=12, 
+                        alpha=0.6
+                    )
             
             # Convert the frame to RGB for Tkinter
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

@@ -13,7 +13,7 @@ class MakeupApp:
         print("Initializing MakeupApp GUI...")
         self.root = root
         self.root.title("Real-Time Virtual Makeup Try-On")
-        self.root.geometry("800x600")
+        self.root.geometry("1000x600")  # Increased width for better layout
         
         # Initialize MakeupTryOn
         self.makeup_tryon = MakeupTryOn(device='cpu')  # Change to 'cuda' if GPU is available
@@ -40,6 +40,15 @@ class MakeupApp:
         
         self.stop_button = tk.Button(self.webcam_frame, text="Stop Makeup", command=self.stop_makeup, state=tk.DISABLED)
         self.stop_button.pack(pady=10)
+        
+        # Option to visualize segmentation
+        self.visualize_var = tk.BooleanVar()
+        self.visualize_check = tk.Checkbutton(
+            self.webcam_frame, 
+            text="Visualize Segmentation", 
+            variable=self.visualize_var
+        )
+        self.visualize_check.pack(pady=5)
         
         self.thread = None
         self.running = False
@@ -78,7 +87,10 @@ class MakeupApp:
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
         self.running = True
-        self.thread = threading.Thread(target=self.makeup_tryon.start_webcam, args=(self.update_webcam_feed,))
+        self.thread = threading.Thread(
+            target=self.makeup_tryon.start_webcam, 
+            args=(self.update_webcam_feed, self.visualize_var.get())
+        )
         self.thread.start()
         print("Webcam feed started.")
 
@@ -102,7 +114,8 @@ class MakeupApp:
         # Update the Label
         self.webcam_label.imgtk = imgtk
         self.webcam_label.configure(image=imgtk)
-        print("Webcam frame updated.")
+        # Optional: To prevent excessive print statements, you can comment out the following line
+        # print("Webcam frame updated.")
 
     def on_closing(self):
         print("Closing application...")

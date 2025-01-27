@@ -1,3 +1,5 @@
+# src/face_parsing.py
+
 import torch
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 import cv2
@@ -12,12 +14,13 @@ class FaceParser:
         self.model.to(self.device)
         self.model.eval()
     
-    def parse(self, image):
+    def parse(self, image, return_full_map=False):
         """
         Perform face parsing on the input image.
 
         :param image: BGR image (from OpenCV)
-        :return: Segmentation map as a NumPy array with shape (H, W)
+        :param return_full_map: If True, returns the colored segmentation map
+        :return: Segmentation map as a NumPy array with shape (H, W), and optionally the colored map
         """
         # Convert BGR to RGB
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -43,4 +46,11 @@ class FaceParser:
         # Get the segmentation map by taking the argmax
         segmentation = upsampled_logits.argmax(dim=1).squeeze().cpu().numpy()
         
-        return segmentation  # Shape: (H, W)
+        if return_full_map:
+            # Define a color map for visualization (customize as needed)
+            num_classes = segmentation.max() + 1
+            colors = np.random.randint(0, 255, size=(num_classes, 3), dtype=np.uint8)
+            color_seg = colors[segmentation]
+            return segmentation, color_seg
+        else:
+            return segmentation  # Shape: (H, W)
