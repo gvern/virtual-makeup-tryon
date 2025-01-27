@@ -1,5 +1,9 @@
 # src/face_parsing.py
 
+# Since we are transitioning to MediaPipe FaceMesh for landmarks,
+# face_parsing.py can be simplified or integrated into makeup_transfer.py
+# However, if you still require semantic segmentation, you can retain this module.
+
 import torch
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 import cv2
