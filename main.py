@@ -140,6 +140,7 @@ class MakeupTryOn:
                         logging.info("Makeup applied.")
                 else:
                     logging.info("No face detected. Skipping makeup application.")
+                    continue  # Skip to the next frame without applying makeup
                 
                 # Convert to RGB
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
