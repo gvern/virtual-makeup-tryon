@@ -6,7 +6,7 @@ from src.face_parsing import FaceParser
 from src.makeup_transfer import MakeupTransfer
 
 class MakeupTryOn:
-    def __init__(self, device='cpu', frame_width=640, frame_height=480):
+    def __init__(self, device='cpu', frame_width=480, frame_height=360):
         # Initialize components
         self.face_detector = FaceDetector()
         self.face_parser = FaceParser(device=device)
@@ -31,15 +31,15 @@ class MakeupTryOn:
         # Parse face
         parsing_map_ref, _ = self.face_parser.parse(reference_image, return_full_map=True)
         
-        # Extract lipstick color (Assuming label 12 corresponds to lips)
+        # Extract lipstick color (Target regions 11 and 12)
         self.lipstick_color = self.makeup_transfer.extract_makeup_color(
             reference_image, 
             parsing_map_ref, 
-            target_region=12  # Update if label differs
+            target_regions=[11, 12]  # Updated to include both upper and lower lip
         )
         print(f"Extracted Lipstick Color (BGR): {self.lipstick_color}")
 
-    def start_webcam(self, display_callback, visualize_segmentation=False):
+    def start_webcam(self, display_callback, visualize_segmentation=False, alpha=0.6):
         if self.lipstick_color is None:
             raise ValueError("Reference image not loaded. Please load a reference image first.")
         
@@ -62,26 +62,26 @@ class MakeupTryOn:
             if faces:
                 if visualize_segmentation:
                     parsing_map, color_seg = self.face_parser.parse(frame, return_full_map=True)
-                    # Apply makeup
+                    # Apply makeup to multiple regions
                     frame = self.makeup_transfer.apply_makeup(
                         frame, 
                         parsing_map, 
                         makeup_color=self.lipstick_color, 
-                        target_region=12,  # Update if label differs
-                        alpha=0.6
+                        target_regions=[11, 12],  # Updated to include both regions
+                        alpha=alpha
                     )
                     # Overlay the segmentation map (optional)
                     frame = cv2.addWeighted(frame, 0.7, color_seg, 0.3, 0)
                     print("Makeup applied with segmentation visualization.")
                 else:
                     parsing_map = self.face_parser.parse(frame)
-                    # Apply makeup
+                    # Apply makeup to multiple regions
                     frame = self.makeup_transfer.apply_makeup(
                         frame, 
                         parsing_map, 
                         makeup_color=self.lipstick_color, 
-                        target_region=12, 
-                        alpha=0.6
+                        target_regions=[11, 12], 
+                        alpha=alpha
                     )
                     print("Makeup applied.")
             else:
