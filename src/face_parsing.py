@@ -1,13 +1,13 @@
 import torch
-from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
+from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 import cv2
 import numpy as np
 
 class FaceParser:
     def __init__(self, model_name='jonathandinu/face-parsing', device='cpu'):
         self.device = torch.device(device)
-        # Initialize the feature extractor and model from HuggingFace
-        self.feature_extractor = SegformerFeatureExtractor.from_pretrained(model_name)
+        # Initialize the image processor and model from HuggingFace
+        self.image_processor = SegformerImageProcessor.from_pretrained(model_name)
         self.model = SegformerForSemanticSegmentation.from_pretrained(model_name)
         self.model.to(self.device)
         self.model.eval()
@@ -23,7 +23,7 @@ class FaceParser:
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         # Prepare the image for the model
-        inputs = self.feature_extractor(images=image_rgb, return_tensors="pt")
+        inputs = self.image_processor(images=image_rgb, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         
         with torch.no_grad():

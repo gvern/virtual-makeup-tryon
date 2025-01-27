@@ -1,3 +1,5 @@
+# src/makeup_transfer.py
+
 import cv2
 import numpy as np
 
@@ -5,7 +7,7 @@ class MakeupTransfer:
     def __init__(self):
         pass
     
-    def extract_makeup_color(self, reference_image, parsing_map, target_region=12):
+    def extract_makeup_color(self, reference_image, parsing_map, target_region=10):
         """
         Extract average color from the target region in the reference image.
 
@@ -22,7 +24,7 @@ class MakeupTransfer:
         mean_color = cv2.mean(reference_image, mask=mask)[:3]
         return mean_color  # BGR
     
-    def apply_makeup(self, target_image, parsing_map, makeup_color, target_region=12, alpha=0.5):
+    def apply_makeup(self, target_image, parsing_map, makeup_color, target_region=10, alpha=0.6):
         """
         Apply the makeup color to the target region.
 
@@ -33,20 +35,20 @@ class MakeupTransfer:
         :param alpha: Intensity of makeup
         :return: Image with applied makeup
         """
-        overlay = target_image.copy()
+        # Create a mask for the target region
         mask = (parsing_map == target_region).astype(np.uint8) * 255
-        
-        # Optional: Apply morphological operations to smooth the mask
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
         
         # Create an overlay with the makeup color
-        overlay[:] = makeup_color
+        overlay = np.full(target_image.shape, makeup_color, dtype=np.uint8)
         
-        # Blend the overlay with the target image
-        result = cv2.addWeighted(overlay, alpha, target_image, 1 - alpha, 0)
+        # Apply Gaussian blur to the overlay to soften edges
+        overlay = cv2.GaussianBlur(overlay, (7, 7), 0)
         
-        # Apply the mask to restrict makeup to the target region
-        target = cv2.bitwise_and(result, result, mask=mask)
-        background = cv2.bitwise_and(target_image, target_image, mask=cv2.bitwise_not(mask))
-        final = cv2.add(target, background)
-        return final
+        # Blend the overlay with the target image using the mask
+        blended = cv2.addWeighted(overlay, alpha, target_image, 1 - alpha, 0)
+        
+        # Combine the blended region with the original image
+        makeup_applied = np.where(mask[:, :, np.newaxis] == 255, blended, target_image)
+        
+        return makeup_applied
