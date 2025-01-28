@@ -111,7 +111,7 @@ A window titled "Real-Time Virtual Makeup Try-On" will open, displaying your web
 - HuggingFace Hub
 
 ## Future Enhancements
-- Multiple Makeup Regions: Extend to eyeshadow, blush, foundation, etc.
+- Multiple Makeup Regions: Extend to eyeshadow, Eyebrow, foundation, etc.
 - Attribute Controls: Allow users to adjust makeup intensity, glossiness, and color.
 - Mobile Deployment: Optimize and deploy the application on Android and iOS devices.
 - Advanced Rendering: Incorporate differentiable rendering for better lighting and geometry adaptation.

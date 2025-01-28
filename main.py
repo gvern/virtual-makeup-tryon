@@ -1,9 +1,10 @@
-# src/main.py
+# main.py
 
 import cv2
 from src.face_detection import FaceDetector
 from src.face_parsing import FaceParser
 from src.makeup_transfer import MakeupTransfer
+from utils.visualization import overlay_segmentation
 import threading
 import queue
 import time
@@ -25,7 +26,8 @@ class MakeupTryOn:
         self.face_detector = FaceDetector()
         self.face_parser = FaceParser(device=device)
         self.makeup_transfer = MakeupTransfer()
-        self.makeup_color = None
+        self.makeup_colors = {}  # Dictionary to store colors per makeup type
+        self.makeup_params = {}  # Dictionary to store parameters per makeup type
         self.cap = None
         self.running = False
         self.frame_width = frame_width
@@ -44,10 +46,13 @@ class MakeupTryOn:
             raise ValueError("RGB color must be a tuple of 3 elements.")
         return (int(rgb_color[2]), int(rgb_color[1]), int(rgb_color[0]))
 
-    def load_reference_image(self, reference_path, makeup_type='Lipstick'):
+    def load_reference_image(self, reference_path, makeup_types=['Lipstick']):
         """
         Loads the reference image, detects the face, parses the facial regions,
-        and extracts the average makeup color based on the selected makeup style.
+        and extracts the average makeup color(s) based on the selected makeup types.
+
+        :param reference_path: Path to the reference image.
+        :param makeup_types: List of makeup types to extract.
         """
         logging.info(f"Loading reference image from: {reference_path}")
         # Load the image
@@ -55,26 +60,35 @@ class MakeupTryOn:
         if image is None:
             logging.error("Failed to load the reference image. Please check the file path.")
             raise ValueError("Failed to load the reference image.")
-        
+
         # Detect faces and landmarks
         faces_landmarks = self.face_detector.detect_faces(image)
         if not faces_landmarks:
             logging.error("No faces detected in the reference image.")
             raise ValueError("No faces detected in the reference image.")
-        
+
         # For simplicity, consider the first detected face
         landmarks = faces_landmarks[0]
         logging.info("Face detected in the reference image.")
-        
-        # Extract makeup color based on the selected makeup style
-        self.makeup_color = self.makeup_transfer.extract_makeup_color(image, landmarks, makeup_type=makeup_type)
-        logging.info(f"Makeup color extracted: {self.makeup_color} (B, G, R)")
 
-    def start_webcam(self, display_callback, visualize_segmentation=False, makeup_type='Lipstick', alpha=0.6):
-        if self.makeup_color is None:
-            logging.error("Reference image not loaded.")
-            raise ValueError("Reference image not loaded. Please load a reference image first.")
-        
+        # Extract makeup colors based on the selected makeup styles
+        makeup_colors = self.makeup_transfer.extract_makeup_color(image, landmarks, makeup_types=makeup_types)
+        self.makeup_colors.update(makeup_colors)
+        logging.info(f"Makeup colors extracted: {self.makeup_colors}")
+
+    def start_webcam(self, display_callback, visualize_segmentation=False, makeup_params={}):
+        """
+        Starts the webcam and applies makeup in real-time based on the provided parameters.
+
+        :param display_callback: Function to call with the processed frame for display.
+        :param visualize_segmentation: Boolean indicating whether to visualize segmentation.
+        :param makeup_params: Dictionary with makeup types as keys and their parameters as values.
+                               Each value should be a dictionary with 'color' (BGR tuple) and 'intensity' (float)
+        """
+        if not self.makeup_colors:
+            logging.error("Makeup colors not loaded.")
+            raise ValueError("Makeup colors not loaded. Please load a reference image first.")
+
         if self.running:
             logging.error("Webcam is already running.")
             return
@@ -82,8 +96,7 @@ class MakeupTryOn:
         logging.info("Attempting to open webcam...")
         retries = 5
         for attempt in range(1, retries + 1):
-            # Try different backends or indices
-            self.cap = cv2.VideoCapture(0)  # Specify backend for Windows
+            self.cap = cv2.VideoCapture(0)  
             if self.cap.isOpened():
                 logging.info(f"Webcam successfully opened on attempt {attempt}.")
                 break
@@ -122,23 +135,27 @@ class MakeupTryOn:
                 faces_landmarks = self.face_detector.detect_faces(frame)
                 if faces_landmarks:
                     for landmarks in faces_landmarks:
-                        if visualize_segmentation:
-                            # Optional: visualize segmentation using landmarks
-                            pass  # Implement visualization if needed
-                        
-                        # Apply makeup based on the selected type
+                        # Apply makeup based on the provided makeup parameters
                         frame = self.makeup_transfer.apply_makeup(
                             frame, 
                             landmarks, 
-                            makeup_type=makeup_type, 
-                            alpha=alpha
+                            makeup_params=makeup_params
                         )
-                        logging.info(f"{makeup_type} applied.")
+                        logging.info("Makeup applied.")
+
+                        if visualize_segmentation:
+                            # Overlay segmentation masks for each makeup type
+                            frame = overlay_segmentation(
+                                frame, 
+                                landmarks, 
+                                makeup_types=list(makeup_params.keys())
+                            )
+                            logging.debug("Segmentation overlay applied.")
                 else:
                     logging.info("No face detected. Skipping makeup application.")
                     continue  # Skip makeup application
-                
-                # Convert to RGB
+
+                # Convert to RGB for Tkinter compatibility
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 
                 # Enqueue frame
