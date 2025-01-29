@@ -292,17 +292,17 @@ default_colors = {
                     "LIP_UPPER": "#FF0000",
                     "LIP_LOWER": "#FF0000"
                 }
-                default_opacities = {
-                    "BLUSH_LEFT": 0.3,
-                    "BLUSH_RIGHT": 0.3,
-                    "EYES": 0.5,
-                    "EYEBROWS": 0.5,
-                    "EYESHADOW_LEFT": 0.4,
-                    "EYESHADOW_RIGHT": 0.4,
-                    "FACE": 0.2,
-                    "LIP_UPPER": 0.6,
-                    "LIP_LOWER": 0.6,
-                }
+default_opacities = {
+    "BLUSH_LEFT": 0.3,
+    "BLUSH_RIGHT": 0.3,
+    "EYES": 0.5,
+    "EYEBROWS": 0.5,
+    "EYESHADOW_LEFT": 0.4,
+    "EYESHADOW_RIGHT": 0.4,
+    "FACE": 0.2,
+    "LIP_UPPER": 0.6,
+    "LIP_LOWER": 0.6,
+}
 
 
 

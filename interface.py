@@ -29,9 +29,9 @@ class MakeupApp:
         self.root.geometry("1400x900")  # Increased window size for better layout
 
         # Initialize MakeupTryOn
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        logging.info(f"Using device: {device}")
-        self.makeup_tryon = MakeupTryOn(device=device, frame_width=640, frame_height=480)
+        # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # logging.info(f"Using device: {device}")
+        self.makeup_tryon = MakeupTryOn( frame_width=640, frame_height=480)
 
         # Configure grid layout
         self.root.columnconfigure(0, weight=1)

@@ -2,7 +2,6 @@
 
 import cv2
 from src.face_detection import FaceDetector
-from src.face_parsing import FaceParser
 from src.makeup_transfer import MakeupTransfer
 from utils.visualization import overlay_segmentation
 import threading
@@ -21,10 +20,9 @@ logging.basicConfig(
 )
 
 class MakeupTryOn:
-    def __init__(self, device='cpu', frame_width=640, frame_height=480):
+    def __init__(self, frame_width=640, frame_height=480):
         # Initialize components
         self.face_detector = FaceDetector()
-        self.face_parser = FaceParser(device=device)
         self.makeup_transfer = MakeupTransfer()
         self.makeup_colors = {}  # Dictionary to store colors per makeup type
         self.makeup_params = {}  # Dictionary to store parameters per makeup type

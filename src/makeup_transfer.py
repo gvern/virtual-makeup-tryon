@@ -4,12 +4,13 @@ import cv2
 import numpy as np
 import logging
 from assets.facemesh_landmarks import (
-    FACEMESH_LIPS, 
-    FACEMESH_LEFT_EYE, 
-    FACEMESH_RIGHT_EYE, 
+    FACEMESH_LIP_UPPER,
+    FACEMESH_LIP_LOWER,
+    FACEMESH_EYESHADOW_LEFT, 
+    FACEMESH_EYESHADOW_RIGHT, 
     FACEMESH_LEFT_EYEBROW, 
     FACEMESH_RIGHT_EYEBROW, 
-    FACEMESH_FACE_OVAL
+    FACEMESH_FACE
 )
 
 # Configure logging
@@ -58,21 +59,29 @@ class MakeupTransfer:
 
             try:
                 if makeup_type == 'Lipstick':
-                    indices = [idx for pair in FACEMESH_LIPS for idx in pair]
-                    lip_landmarks = [landmarks[i] for i in indices]
-                    hull = cv2.convexHull(np.array(lip_landmarks))
+                    #Lower lip
+                    indices = [idx for pair in FACEMESH_LIP_LOWER for idx in pair]
+                    lower_lip_landmarks = [landmarks[i] for i in indices]
+                    hull = cv2.convexHull(np.array(lower_lip_landmarks))
                     cv2.fillConvexPoly(mask, hull, 255)
-                    logging.debug("Lipstick mask created.")
+                    logging.debug("Lower lipstick mask created.")
+
+                    #Upper lip
+                    indices = [idx for pair in FACEMESH_LIP_UPPER for idx in pair]
+                    upper_lip_landmarks = [landmarks[i] for i in indices]
+                    hull = cv2.convexHull(np.array(upper_lip_landmarks))
+                    cv2.fillConvexPoly(mask, hull, 255)
+                    logging.debug("Upper lipstick mask created.")
                 elif makeup_type == 'Eyeshadow':
                     # Left eye
-                    indices = [idx for pair in FACEMESH_LEFT_EYE for idx in pair]
+                    indices = [idx for pair in FACEMESH_EYESHADOW_LEFT for idx in pair]
                     left_eye_landmarks = [landmarks[i] for i in indices]
                     hull_left = cv2.convexHull(np.array(left_eye_landmarks))
                     cv2.fillConvexPoly(mask, hull_left, 255)
                     logging.debug("Left eyeshadow mask created.")
 
                     # Right eye
-                    indices = [idx for pair in FACEMESH_RIGHT_EYE for idx in pair]
+                    indices = [idx for pair in FACEMESH_EYESHADOW_RIGHT for idx in pair]
                     right_eye_landmarks = [landmarks[i] for i in indices]
                     hull_right = cv2.convexHull(np.array(right_eye_landmarks))
                     cv2.fillConvexPoly(mask, hull_right, 255)
@@ -80,20 +89,20 @@ class MakeupTransfer:
                 elif makeup_type == 'Eyebrow':
                     # Left Eyebrow
                     indices = [idx for pair in FACEMESH_LEFT_EYEBROW for idx in pair]
-                    left_cheek_landmarks = [landmarks[i] for i in indices]
+                    left_eyebrow_landmarks = [landmarks[i] for i in indices]
                     hull_left = cv2.convexHull(np.array(left_cheek_landmarks))
                     cv2.fillConvexPoly(mask, hull_left, 255)
                     logging.debug("Left Eyebrow mask created.")
 
                     # Right Eyebrow
                     indices = [idx for pair in FACEMESH_RIGHT_EYEBROW for idx in pair]
-                    right_cheek_landmarks = [landmarks[i] for i in indices]
+                    right_eyebrow_landmarks = [landmarks[i] for i in indices]
                     hull_right = cv2.convexHull(np.array(right_cheek_landmarks))
                     cv2.fillConvexPoly(mask, hull_right, 255)
                     logging.debug("Right Eyebrow mask created.")
                 elif makeup_type == 'Foundation':
                     # Entire face
-                    indices = [idx for pair in FACEMESH_FACE_OVAL for idx in pair]
+                    indices = [idx for pair in FACEMESH_FACE for idx in pair]
                     face_landmarks = [landmarks[i] for i in indices]
                     hull = cv2.convexHull(np.array(face_landmarks))
                     cv2.fillConvexPoly(mask, hull, 255)
@@ -141,21 +150,29 @@ class MakeupTransfer:
 
             try:
                 if makeup_type == 'Lipstick':
-                    indices = [idx for pair in FACEMESH_LIPS for idx in pair]
-                    lip_landmarks = [landmarks[i] for i in indices]
-                    hull = cv2.convexHull(np.array(lip_landmarks))
+                    #Lower lip
+                    indices = [idx for pair in FACEMESH_LIP_LOWER for idx in pair]
+                    lower_lip_landmarks = [landmarks[i] for i in indices]
+                    hull = cv2.convexHull(np.array(lower_lip_landmarks))
                     cv2.fillConvexPoly(mask, hull, 255)
-                    logging.debug("Lipstick mask created.")
+                    logging.debug("Lower lipstick mask created.")
+
+                    #Upper lip
+                    indices = [idx for pair in FACEMESH_LIP_UPPER for idx in pair]
+                    upper_lip_landmarks = [landmarks[i] for i in indices]
+                    hull = cv2.convexHull(np.array(upper_lip_landmarks))
+                    cv2.fillConvexPoly(mask, hull, 255)
+                    logging.debug("Upper lipstick mask created.")
                 elif makeup_type == 'Eyeshadow':
                     # Left eye
-                    indices = [idx for pair in FACEMESH_LEFT_EYE for idx in pair]
+                    indices = [idx for pair in FACEMESH_EYESHADOW_LEFT for idx in pair]
                     left_eye_landmarks = [landmarks[i] for i in indices]
                     hull_left = cv2.convexHull(np.array(left_eye_landmarks))
                     cv2.fillConvexPoly(mask, hull_left, 255)
                     logging.debug("Left eyeshadow mask created.")
 
                     # Right eye
-                    indices = [idx for pair in FACEMESH_RIGHT_EYE for idx in pair]
+                    indices = [idx for pair in FACEMESH_EYESHADOW_RIGHT for idx in pair]
                     right_eye_landmarks = [landmarks[i] for i in indices]
                     hull_right = cv2.convexHull(np.array(right_eye_landmarks))
                     cv2.fillConvexPoly(mask, hull_right, 255)
@@ -176,7 +193,7 @@ class MakeupTransfer:
                     logging.debug("Right Eyebrow mask created.")
                 elif makeup_type == 'Foundation':
                     # Entire face
-                    indices = [idx for pair in FACEMESH_FACE_OVAL for idx in pair]
+                    indices = [idx for pair in FACEMESH_FACE for idx in pair]
                     face_landmarks = [landmarks[i] for i in indices]
                     hull = cv2.convexHull(np.array(face_landmarks))
                     cv2.fillConvexPoly(mask, hull, 255)
