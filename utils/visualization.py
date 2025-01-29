@@ -69,15 +69,15 @@ def overlay_segmentation(image, landmarks, makeup_types=['Lipstick'], outline_co
             elif makeup_type == 'Eyebrow':
                 # Left Eyebrow
                 indices = [idx for pair in FACEMESH_LEFT_EYEBROW for idx in pair]
-                left_cheek_landmarks = [landmarks[i] for i in indices]
-                hull_left = cv2.convexHull(np.array(left_cheek_landmarks))
+                left_eyebrow_landmarks = [landmarks[i] for i in indices]
+                hull_left = cv2.convexHull(np.array(left_eyebrow_landmarks))
                 cv2.fillConvexPoly(mask, hull_left, 255)
                 logging.debug("Left Eyebrow mask created.")
 
                 # Right Eyebrow
                 indices = [idx for pair in FACEMESH_RIGHT_EYEBROW for idx in pair]
-                right_cheek_landmarks = [landmarks[i] for i in indices]
-                hull_right = cv2.convexHull(np.array(right_cheek_landmarks))
+                right_eyebrow_landmarks = [landmarks[i] for i in indices]
+                hull_right = cv2.convexHull(np.array(right_eyebrow_landmarks))
                 cv2.fillConvexPoly(mask, hull_right, 255)
                 logging.debug("Right Eyebrow mask created.")
             elif makeup_type == 'Foundation':
