@@ -14,7 +14,7 @@ import time
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
+    level=logging.DEBUG,  # DEBUG for detailed logs
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
         logging.StreamHandler()
@@ -29,9 +29,7 @@ class MakeupApp:
         self.root.geometry("1400x900")  # Increased window size for better layout
 
         # Initialize MakeupTryOn
-        # device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # logging.info(f"Using device: {device}")
-        self.makeup_tryon = MakeupTryOn( frame_width=640, frame_height=480)
+        self.makeup_tryon = MakeupTryOn(frame_width=640, frame_height=480)
 
         # Configure grid layout
         self.root.columnconfigure(0, weight=1)
@@ -137,8 +135,6 @@ class MakeupApp:
         )
         self.visualize_check.grid(row=1, column=0, columnspan=2, pady=5)
 
-
-
         # Snapshot and Save Makeup Parameters
         self.snapshot_button = tk.Button(
             self.controls_frame, 
@@ -238,21 +234,24 @@ class MakeupApp:
             logging.warning("Makeup try-on is already running.")
             return
 
-        # Get the intensity values from sliders
+        # Get the intensity values from sliders and colors
         makeup_params = {}
         for makeup_type in self.makeup_types:
             if self.selected_makeups[makeup_type].get():
                 intensity = self.selected_makeups[makeup_type+'_slider'].get()
+                color_canvas = self.color_canvases[makeup_type]
+                # Get the color from the canvas
+                color_hex = color_canvas.itemcget("all", "fill")
+                color_bgr = tuple(int(color_hex[i:i+2], 16) for i in (5, 3, 1))  # Convert hex to BGR
                 makeup_params[makeup_type] = {
                     'intensity': intensity,
-                    'color': self.makeup_tryon.makeup_colors.get(makeup_type, (0, 0, 255))
+                    'color': color_bgr
                 }
 
         if not makeup_params:
             messagebox.showwarning("No Makeup Selected", "Please select at least one makeup type.")
             logging.warning("No makeup type selected for application.")
             return
-
 
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)

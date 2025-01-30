@@ -12,7 +12,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
+    level=logging.DEBUG,  # DEBUG for detailed logs
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
         logging.StreamHandler()
@@ -25,7 +25,6 @@ class MakeupTryOn:
         self.face_detector = FaceDetector()
         self.makeup_transfer = MakeupTransfer()
         self.makeup_colors = {}  # Dictionary to store colors per makeup type
-        self.makeup_params = {}  # Dictionary to store parameters per makeup type
         self.cap = None
         self.running = False
         self.frame_width = frame_width
