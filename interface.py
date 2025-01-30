@@ -11,6 +11,7 @@ import torch
 import queue
 import logging
 import time
+from src.makeup_config import MAKEUP_TYPES_CONFIG
 
 # Configure logging
 logging.basicConfig(
@@ -30,6 +31,9 @@ class MakeupApp:
 
         # Initialize MakeupTryOn
         self.makeup_tryon = MakeupTryOn(frame_width=640, frame_height=480)
+
+        # Create a mapping from makeup type to default intensity
+        self.default_intensities = {config.name: config.default_intensity for config in MAKEUP_TYPES_CONFIG}
 
         # Configure grid layout
         self.root.columnconfigure(0, weight=1)
@@ -92,7 +96,7 @@ class MakeupApp:
             )
             btn.grid(row=i, column=1, padx=5, pady=2)
 
-            # Intensity slider
+            # Intensity slider with default from config
             slider = tk.Scale(
                 self.style_frame, 
                 from_=0.0, 
@@ -102,7 +106,8 @@ class MakeupApp:
                 label=f"{makeup_type} Intensity",
                 state=tk.DISABLED
             )
-            slider.set(0.6)  # Default value
+            default_intensity = self.default_intensities.get(makeup_type, 0.6)  # Fallback to 0.6 if not found
+            slider.set(default_intensity)
             slider.grid(row=i, column=2, padx=5, pady=2)
 
             # Store references to buttons and sliders
@@ -163,6 +168,16 @@ class MakeupApp:
         self.current_frame = None  # To store the latest frame
         self.update_delay = 30  # milliseconds
 
+        # Bind slider and color picker changes to update makeup_params
+        for makeup_type in self.makeup_types:
+            slider = self.selected_makeups.get(f"{makeup_type}_slider")
+            if slider:
+                slider.config(command=lambda val, mt=makeup_type: self.update_intensity(mt, val))
+            
+            btn = self.selected_makeups.get(f"{makeup_type}_btn")
+            if btn:
+                btn.config(command=lambda mt=makeup_type: self.pick_makeup_color(mt))
+        
         # Start the periodic GUI update
         self.root.after(self.update_delay, self.process_queue)
 
@@ -206,15 +221,28 @@ class MakeupApp:
                 self.ref_photo = ImageTk.PhotoImage(img)
                 self.ref_image_label.configure(image=self.ref_photo)
 
-                # Display the makeup colors
-                for makeup_type in self.makeup_types:
-                    color = self.makeup_tryon.makeup_colors.get(makeup_type, (255, 255, 255))  # Default to white if not set
-                    b, g, r = color
-                    color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
-                    canvas = self.color_canvases[makeup_type]
-                    canvas.delete("all")  # Clear previous color
-                    canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
-                    logging.info(f"Makeup Color Displayed for {makeup_type}: {color_hex}")
+                # Display the makeup colors and set slider intensities
+                with self.makeup_tryon.makeup_params_lock:
+                    for makeup_type in self.makeup_types:
+                        if makeup_type in self.makeup_tryon.makeup_params:
+                            color = self.makeup_tryon.makeup_params[makeup_type]['color']
+                            intensity = self.makeup_tryon.makeup_params[makeup_type]['intensity']
+                        else:
+                            color = (255, 255, 255)  # Default to white if not set
+                            intensity = self.default_intensities.get(makeup_type, 0.6)
+                        
+                        b, g, r = color
+                        color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+                        canvas = self.color_canvases[makeup_type]
+                        canvas.delete("all")  # Clear previous color
+                        canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
+                        logging.info(f"Makeup Color Displayed for {makeup_type}: {color_hex}")
+
+                        # Set slider intensity from MakeupTryOn's makeup_params
+                        slider = self.selected_makeups.get(f"{makeup_type}_slider")
+                        if slider:
+                            slider.set(intensity)
+                            logging.info(f"Set default intensity for {makeup_type} to {intensity}")
 
                 messagebox.showinfo("Success", "Reference image loaded successfully!")
                 logging.info("Reference image loaded and displayed.")
@@ -222,36 +250,75 @@ class MakeupApp:
                 messagebox.showerror("Error", str(e))
                 logging.error(f"Error loading reference image: {e}")
 
+    def update_intensity(self, makeup_type, value):
+        """
+        Update the intensity for a given makeup type.
+        """
+        try:
+            intensity = float(value)
+            with self.makeup_tryon.makeup_params_lock:
+                if makeup_type in self.makeup_tryon.makeup_params:
+                    self.makeup_tryon.makeup_params[makeup_type]['intensity'] = intensity
+                else:
+                    self.makeup_tryon.makeup_params[makeup_type] = {'intensity': intensity, 'color': (255, 255, 255)}
+            logging.debug(f"Updated intensity for {makeup_type} to {intensity}")
+        except ValueError:
+            logging.error(f"Invalid intensity value: {value} for {makeup_type}")
+
+    def pick_makeup_color(self, makeup_type):
+        color_code = colorchooser.askcolor(title=f"Choose {makeup_type} Color")
+        if color_code and color_code[0]:
+            r, g, b = color_code[0]
+            try:
+                bgr_color = self.makeup_tryon.convert_rgb_to_bgr((r, g, b))
+                with self.makeup_tryon.makeup_params_lock:
+                    if makeup_type in self.makeup_tryon.makeup_params:
+                        self.makeup_tryon.makeup_params[makeup_type]['color'] = bgr_color
+                    else:
+                        self.makeup_tryon.makeup_params[makeup_type] = {
+                            'intensity': self.makeup_tryon.default_intensities.get(makeup_type, 0.6),
+                            'color': bgr_color
+                        }
+                # Update the color display
+                color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+                canvas = self.color_canvases[makeup_type]
+                canvas.delete("all")
+                canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
+                logging.info(f"Custom Makeup Color Selected for {makeup_type}: {color_hex}")
+            except ValueError as ve:
+                messagebox.showerror("Error", str(ve))
+                logging.error(f"Error converting color: {ve}")
+
     def start_makeup(self):
         logging.info("Start Makeup button clicked.")
-        if not self.makeup_tryon.makeup_colors:
-            messagebox.showwarning("Warning", "Please upload a reference image first.")
-            logging.warning("Makeup try-on not started: Reference image not loaded.")
-            return
+        with self.makeup_tryon.makeup_params_lock:
+            if not self.makeup_tryon.makeup_params:
+                messagebox.showwarning("Warning", "Please upload a reference image first.")
+                logging.warning("Makeup try-on not started: Reference image not loaded.")
+                return
 
         if self.makeup_tryon.running:
             messagebox.showwarning("Warning", "Makeup application is already running.")
             logging.warning("Makeup try-on is already running.")
             return
 
-        # Get the intensity values from sliders and colors
-        makeup_params = {}
-        for makeup_type in self.makeup_types:
-            if self.selected_makeups[makeup_type].get():
-                intensity = self.selected_makeups[makeup_type+'_slider'].get()
-                color_canvas = self.color_canvases[makeup_type]
-                # Get the color from the canvas
-                color_hex = color_canvas.itemcget("all", "fill")
-                color_bgr = tuple(int(color_hex[i:i+2], 16) for i in (5, 3, 1))  # Convert hex to BGR
-                makeup_params[makeup_type] = {
-                    'intensity': intensity,
-                    'color': color_bgr
-                }
-
-        if not makeup_params:
-            messagebox.showwarning("No Makeup Selected", "Please select at least one makeup type.")
-            logging.warning("No makeup type selected for application.")
-            return
+        # Update MakeupTryOn's makeup_params based on selected makeups
+        with self.makeup_tryon.makeup_params_lock:
+            for makeup_type in self.makeup_types:
+                if self.selected_makeups[makeup_type].get():
+                    # Ensure makeup_type exists in makeup_params
+                    if makeup_type not in self.makeup_tryon.makeup_params:
+                        # Initialize with default values
+                        self.makeup_tryon.makeup_params[makeup_type] = {
+                            'intensity': self.makeup_tryon.default_intensities.get(makeup_type, 0.6),
+                            'color': self.makeup_tryon.makeup_params.get(makeup_type, {}).get('color', (255, 255, 255))
+                        }
+                        logging.debug(f"Initialized makeup_params for {makeup_type} with default values.")
+                else:
+                    # If makeup type is not selected, remove it from makeup_params
+                    if makeup_type in self.makeup_tryon.makeup_params:
+                        del self.makeup_tryon.makeup_params[makeup_type]
+                        logging.debug(f"Removed {makeup_type} from makeup_params as it is not selected.")
 
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
@@ -265,8 +332,8 @@ class MakeupApp:
         # Start the webcam in a separate thread
         self.thread = threading.Thread(
             target=self.makeup_tryon.start_webcam, 
-            args=(self.update_webcam_feed, self.visualize_var.get(), makeup_params),  # positional args
-            daemon=True  # Daemon thread to ensure it exits with the main program
+            args=(self.update_webcam_feed, self.visualize_var.get()),
+            daemon=True
         )
         self.thread.start()
         logging.info("Webcam feed thread started.")
@@ -324,25 +391,6 @@ class MakeupApp:
         # Schedule the next queue check
         self.root.after(self.update_delay, self.process_queue)
 
-    def pick_makeup_color(self, makeup_type):
-        color_code = colorchooser.askcolor(title=f"Choose {makeup_type} Color")
-        if color_code and color_code[0]:
-            r, g, b = color_code[0]
-            # Use the convert_rgb_to_bgr function from MakeupTryOn
-            try:
-                bgr_color = self.makeup_tryon.convert_rgb_to_bgr((r, g, b))
-                # Update the stored makeup color
-                self.makeup_tryon.makeup_colors[makeup_type] = bgr_color
-                # Update the color display
-                color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
-                canvas = self.color_canvases[makeup_type]
-                canvas.delete("all")  # Clear previous color
-                canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
-                logging.info(f"Custom Makeup Color Selected for {makeup_type}: {color_hex}")
-            except ValueError as ve:
-                messagebox.showerror("Error", str(ve))
-                logging.error(f"Error converting color: {ve}")
-
     def capture_snapshot(self):
         if self.current_frame is not None:
             # Generate a unique filename
@@ -368,7 +416,8 @@ class MakeupApp:
         if file_path:
             try:
                 with open(file_path, 'w') as f:
-                    json.dump(self.makeup_tryon.makeup_params, f)
+                    with self.makeup_tryon.makeup_params_lock:
+                        json.dump(self.makeup_tryon.makeup_params, f)
                 messagebox.showinfo("Success", f"Makeup parameters saved to {file_path}")
                 logging.info(f"Makeup parameters saved to {file_path}")
             except Exception as e:
@@ -389,22 +438,24 @@ class MakeupApp:
                 with open(file_path, 'r') as f:
                     params = json.load(f)
                 # Apply the loaded parameters
-                for makeup_type, attributes in params.items():
-                    if makeup_type in self.makeup_types:
-                        self.selected_makeups[makeup_type].set(True)
-                        self.update_makeup_controls()
-                        # Set color
-                        b, g, r = attributes.get('color', (255, 255, 255))
-                        color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
-                        canvas = self.color_canvases[makeup_type]
-                        canvas.delete("all")
-                        canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
-                        # Set intensity
-                        intensity = attributes.get('intensity', 0.6)
-                        slider = self.selected_makeups[makeup_type+'_slider']
-                        slider.set(intensity)
-                        # Update the stored color
-                        self.makeup_tryon.makeup_colors[makeup_type] = (b, g, r)
+                with self.makeup_tryon.makeup_params_lock:
+                    for makeup_type, attributes in params.items():
+                        if makeup_type in self.makeup_types:
+                            self.selected_makeups[makeup_type].set(True)
+                            self.update_makeup_controls()
+                            # Set color
+                            b, g, r = attributes.get('color', (255, 255, 255))
+                            color_hex = f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+                            canvas = self.color_canvases[makeup_type]
+                            canvas.delete("all")
+                            canvas.create_rectangle(0, 0, 50, 25, fill=color_hex, outline=color_hex)
+                            # Set intensity
+                            intensity = attributes.get('intensity', self.default_intensities.get(makeup_type, 0.6))
+                            slider = self.selected_makeups.get(f"{makeup_type}_slider")
+                            if slider:
+                                slider.set(intensity)
+                            # Update the MakeupTryOn's makeup_params
+                            self.makeup_tryon.makeup_params[makeup_type] = {'intensity': intensity, 'color': (b, g, r)}
                 messagebox.showinfo("Success", f"Makeup parameters loaded from {file_path}")
                 logging.info(f"Makeup parameters loaded from {file_path}")
             except Exception as e:

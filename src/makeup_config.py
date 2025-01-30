@@ -62,7 +62,7 @@ MAKEUP_TYPES_CONFIG = [
             ])
         },
         default_color=(0, 0, 255),  # Red in BGR
-        default_intensity=0.6
+        default_intensity=0.35
     ),
     MakeupTypeConfig(
         name='Blush',
@@ -88,7 +88,7 @@ MAKEUP_TYPES_CONFIG = [
             ])
         },
         default_color=(255, 0, 0),  # Blue in BGR
-        default_intensity=0.4
+        default_intensity=0.3
     ),
     MakeupTypeConfig(
         name='Eyebrow',
@@ -115,7 +115,7 @@ MAKEUP_TYPES_CONFIG = [
             ])
         },
         default_color=(0, 255, 0),  # Green in BGR
-        default_intensity=0.5
+        default_intensity=0.3
     ),
     MakeupTypeConfig(
         name='Foundation',

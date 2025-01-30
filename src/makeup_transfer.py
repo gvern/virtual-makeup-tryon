@@ -17,7 +17,7 @@ logging.basicConfig(
 class MakeupTransfer:
     def __init__(self):
         logging.info("MakeupTransfer initialized.")
-        self.makeup_colors = {}  # Dictionary to store colors per makeup type
+        self.makeup_colors = {}
 
     def convert_rgb_to_bgr(self, rgb_color):
         """
@@ -35,7 +35,7 @@ class MakeupTransfer:
 
     def extract_makeup_color(self, reference_image, landmarks, makeup_types=['Lipstick']):
         """
-        Extract average color from the target regions in the reference image based on landmarks.
+        Extracts the average color for specified makeup types from the reference image.
 
         :param reference_image: Original reference image in BGR
         :param landmarks: List of facial landmarks as (x, y) tuples
@@ -79,7 +79,6 @@ class MakeupTransfer:
                 logging.error(f"Error extracting {makeup_type} color: {e}")
                 continue  # Proceed with other makeup types
 
-        self.makeup_colors = makeup_colors  # Update the class attribute
         return makeup_colors
 
     def apply_makeup(self, target_image, landmarks, makeup_params):
@@ -118,7 +117,7 @@ class MakeupTransfer:
                     cv2.fillConvexPoly(mask, hull, 255)
                     logging.debug(f"{makeup_type} - {region_name} mask created.")
 
-                # Clean the mask
+                # Clean the mask using morphological operations and Gaussian blur
                 mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
                 mask = cv2.GaussianBlur(mask, (7, 7), 0)
                 logging.debug(f"{makeup_type} mask cleaned and blurred.")

@@ -9,6 +9,7 @@ import queue
 import time
 import numpy as np
 import logging
+from src.makeup_config import MAKEUP_TYPES_CONFIG  # Importing the configuration
 
 # Configure logging
 logging.basicConfig(
@@ -24,13 +25,27 @@ class MakeupTryOn:
         # Initialize components
         self.face_detector = FaceDetector()
         self.makeup_transfer = MakeupTransfer()
-        self.makeup_colors = {}  # Dictionary to store colors per makeup type
         self.cap = None
         self.running = False
         self.frame_width = frame_width
         self.frame_height = frame_height
-        self.frame_queue = queue.Queue(maxsize=10)  # Queue to hold frames
-
+        self.frame_queue = queue.Queue(maxsize=10)
+        
+        # Initialize makeup_params as a dictionary of dictionaries
+        self.makeup_params = {}
+        self.makeup_params_lock = threading.Lock()
+        
+        # Create a mapping for default intensities from configuration
+        self.default_intensities = {config.name: config.default_intensity for config in MAKEUP_TYPES_CONFIG}
+        
+        # Initialize makeup_params with default intensities and default colors
+        for config in MAKEUP_TYPES_CONFIG:
+            self.makeup_params[config.name] = {
+                'intensity': config.default_intensity,
+                'color': config.default_color
+            }
+        logging.info("MakeupTryOn initialized with default makeup parameters.")
+    
     def convert_rgb_to_bgr(self, rgb_color):
         """
         Converts an RGB color tuple to BGR.
@@ -42,7 +57,7 @@ class MakeupTryOn:
             logging.error("RGB color must be a tuple of 3 elements.")
             raise ValueError("RGB color must be a tuple of 3 elements.")
         return (int(rgb_color[2]), int(rgb_color[1]), int(rgb_color[0]))
-
+    
     def load_reference_image(self, reference_path, makeup_types=['Lipstick']):
         """
         Loads the reference image, detects the face, parses the facial regions,
@@ -70,22 +85,47 @@ class MakeupTryOn:
 
         # Extract makeup colors based on the selected makeup styles
         makeup_colors = self.makeup_transfer.extract_makeup_color(image, landmarks, makeup_types=makeup_types)
-        self.makeup_colors.update(makeup_colors)
-        logging.info(f"Makeup colors extracted: {self.makeup_colors}")
+        logging.info(f"Makeup colors extracted: {makeup_colors}")
 
-    def start_webcam(self, display_callback, visualize_segmentation=False, makeup_params={}):
+        with self.makeup_params_lock:
+            for makeup_type, color in makeup_colors.items():
+                if makeup_type in self.makeup_params:
+                    self.makeup_params[makeup_type]['color'] = color
+                    logging.debug(f"Updated color for {makeup_type} to {color}.")
+                else:
+                    # Initialize with default intensity if not present
+                    default_intensity = self.default_intensities.get(makeup_type, 0.6)
+                    self.makeup_params[makeup_type] = {
+                        'intensity': default_intensity,
+                        'color': color
+                    }
+                    logging.debug(f"Initialized makeup_params for {makeup_type} with intensity {default_intensity} and color {color}.")
+    
+    def update_makeup_params(self, new_params):
         """
-        Starts the webcam and applies makeup in real-time based on the provided parameters.
+        Update makeup parameters in a thread-safe manner.
+        :param new_params: Dictionary with makeup types as keys and their parameters.
+        """
+        with self.makeup_params_lock:
+            self.makeup_params.update(new_params)
+            logging.debug(f"Makeup parameters updated: {self.makeup_params}")
+
+    def start_webcam(self, display_callback, visualize_segmentation=False):
+        """
+        Starts the webcam and applies makeup in real-time based on the shared makeup_params.
 
         :param display_callback: Function to call with the processed frame for display.
         :param visualize_segmentation: Boolean indicating whether to visualize segmentation.
-        :param makeup_params: Dictionary with makeup types as keys and their parameters as values.
-                               Each value should be a dictionary with 'color' (BGR tuple) and 'intensity' (float)
         """
-        if not self.makeup_colors:
-            logging.error("Makeup colors not loaded.")
-            raise ValueError("Makeup colors not loaded. Please load a reference image first.")
-
+        with self.makeup_params_lock:
+            if not self.makeup_params:
+                logging.error("Makeup parameters not loaded.")
+                raise ValueError("Makeup parameters not loaded. Please load a reference image first.")
+            
+            if not any(params.get('color') for params in self.makeup_params.values()):
+                logging.error("No makeup types have been set.")
+                raise ValueError("No makeup types have been set. Please select and configure at least one makeup type.")
+        
         if self.running:
             logging.error("Webcam is already running.")
             return
@@ -132,11 +172,15 @@ class MakeupTryOn:
                 faces_landmarks = self.face_detector.detect_faces(frame)
                 if faces_landmarks:
                     for landmarks in faces_landmarks:
-                        # Apply makeup based on the provided makeup parameters
+                        # Retrieve current makeup_params
+                        with self.makeup_params_lock:
+                            current_makeup_params = self.makeup_params.copy()
+                        
+                        # Apply makeup based on the current makeup parameters
                         frame = self.makeup_transfer.apply_makeup(
                             frame, 
                             landmarks, 
-                            makeup_params=makeup_params
+                            makeup_params=current_makeup_params
                         )
                         logging.info("Makeup applied.")
 
@@ -145,7 +189,7 @@ class MakeupTryOn:
                             frame = overlay_segmentation(
                                 frame, 
                                 landmarks, 
-                                makeup_types=list(makeup_params.keys())
+                                makeup_types=list(current_makeup_params.keys())
                             )
                             logging.debug("Segmentation overlay applied.")
                 else:
