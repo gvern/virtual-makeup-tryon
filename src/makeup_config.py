@@ -20,13 +20,19 @@ MakeupTypeConfig = namedtuple('MakeupTypeConfig', [
     'default_intensity'
 ])
 
-def load_makeup_configs(config_path='configs/makeup_types.json') -> list:
+def load_makeup_configs(config_path: str = None) -> list:
     """
     Loads makeup configurations from a JSON file.
-    
-    :param config_path: Path to the JSON configuration file.
+
+    :param config_path: Path to the JSON configuration file. If None, defaults to '../configs/makeup_types.json'.
     :return: List of MakeupTypeConfig instances.
     """
+    if config_path is None:
+        # Determine the absolute path relative to this file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_dir, '..', 'configs', 'makeup_types.json')
+        config_path = os.path.normpath(config_path)  # Normalize the path
+
     if not os.path.exists(config_path):
         logging.error(f"Configuration file not found at {config_path}")
         raise FileNotFoundError(f"Configuration file not found at {config_path}")

@@ -11,6 +11,7 @@ import json
 import logging
 from src.makeup_config import load_makeup_configs
 import numpy as np
+import cv2
 
 # Configure logging
 logging.basicConfig(
@@ -24,7 +25,7 @@ logging.basicConfig(
 class WebcamThread(QThread):
     frame_ready = pyqtSignal(np.ndarray)
 
-    def __init__(self, makeup_tryon):
+    def __init__(self, makeup_tryon: MakeupTryOn):
         super().__init__()
         self.makeup_tryon = makeup_tryon
 
@@ -122,14 +123,22 @@ class MakeupTryOnApp(QWidget):
 
     def upload_image(self):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Reference Image", "",
-                                                   "Image Files (*.jpg *.jpeg *.png)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Reference Image", "",
+            "Image Files (*.jpg *.jpeg *.png)", options=options
+        )
         if file_path:
+            logging.debug(f"Selected file path: {file_path}")
             try:
                 if not self.is_valid_image(file_path):
+                    logging.debug("Image validation failed.")
                     raise ValueError("Invalid image file.")
-                self.makeup_tryon.load_reference_image(file_path, makeup_types=[mt.name for mt in self.makeup_configs])
-                # Update selected makeup colors
+                logging.debug("Image validation passed.")
+                self.makeup_tryon.load_reference_image(
+                    file_path, 
+                    makeup_types=[mt.name for mt in self.makeup_configs]
+                )
+                # Update makeup colors
                 makeup_types_enabled = [mt.name for mt in self.makeup_configs if self.selected_makeup[mt.name]['enabled']]
                 makeup_colors = self.makeup_tryon.makeup_transfer.extract_makeup_color(
                     self.makeup_tryon.reference_image,
@@ -148,19 +157,26 @@ class MakeupTryOnApp(QWidget):
     def is_valid_image(self, path: str) -> bool:
         """
         Validates if the provided path points to a valid image.
-    
+
         :param path: Path to the image file.
         :return: True if valid, False otherwise.
         """
         try:
+            # Attempt to read with OpenCV
             img = cv2.imread(path)
-            if img is None:
-                return False
+            if img is not None:
+                return True
+            
+            # Fallback to Pillow
+            from PIL import Image
+            with Image.open(path) as pil_img:
+                pil_img.verify()  # Verify that it's an image
             return True
-        except:
+        except Exception as e:
+            logging.error(f"Pillow failed to verify image: {e}")
             return False
 
-    def pick_color(self, makeup_type):
+    def pick_color(self, makeup_type: str):
         color = QColorDialog.getColor()
         if color.isValid():
             # Convert QColor to BGR tuple
@@ -168,7 +184,7 @@ class MakeupTryOnApp(QWidget):
             self.selected_makeup[makeup_type]['color'] = bgr_color
             logging.info(f"Selected color for {makeup_type}: {bgr_color}")
 
-    def set_intensity(self, makeup_type, value):
+    def set_intensity(self, makeup_type: str, value: int):
         intensity = value / 100.0
         self.selected_makeup[makeup_type]['intensity'] = intensity
         logging.info(f"Set intensity for {makeup_type}: {intensity}")
@@ -201,16 +217,20 @@ class MakeupTryOnApp(QWidget):
             return
         frame = self.makeup_tryon.frame_queue.get()
         options = QFileDialog.Options()
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save Snapshot", "",
-                                                   "PNG Files (*.png);;JPEG Files (*.jpg *.jpeg)", options=options)
+        save_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Snapshot", "",
+            "PNG Files (*.png);;JPEG Files (*.jpg *.jpeg)", options=options
+        )
         if save_path:
             cv2.imwrite(save_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             QMessageBox.information(self, "Snapshot Saved", f"Snapshot saved at {save_path}")
 
     def save_parameters(self):
         options = QFileDialog.Options()
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save Parameters", "",
-                                                   "JSON Files (*.json)", options=options)
+        save_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Parameters", "",
+            "JSON Files (*.json)", options=options
+        )
         if save_path:
             params = {}
             for makeup_type, param in self.selected_makeup.items():
@@ -228,8 +248,11 @@ class MakeupTryOnApp(QWidget):
                 QMessageBox.critical(self, "Error", f"Failed to save parameters: {e}")
 
     def load_parameters(self):
-        file_path = QFileDialog.getOpenFileName(self, "Load Parameters", "",
-                                               "JSON Files (*.json)")[0]
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Load Parameters", "",
+            "JSON Files (*.json)", options=options
+        )
         if file_path:
             try:
                 with open(file_path, 'r') as f:
@@ -238,7 +261,7 @@ class MakeupTryOnApp(QWidget):
                     if makeup_type in self.selected_makeup:
                         self.selected_makeup[makeup_type]['enabled'] = param.get('enabled', True)
                         self.selected_makeup[makeup_type]['color'] = tuple(param.get('color', self.selected_makeup[makeup_type]['color']))
-                        self.selected_makeup[makeup_type]['intensity'].set(param.get('intensity', 0.5))
+                        self.selected_makeup[makeup_type]['intensity'] = param.get('intensity', 0.5)
                         logging.info(f"Loaded parameters for {makeup_type}")
                 QMessageBox.information(self, "Parameters Loaded", f"Makeup parameters loaded from {file_path}")
             except Exception as e:
@@ -248,7 +271,7 @@ class MakeupTryOnApp(QWidget):
     def update_image(self, frame: np.ndarray):
         """
         Updates the video display with the latest frame.
-    
+
         :param frame: Latest frame from the webcam in BGR format.
         """
         # Convert BGR to RGB
