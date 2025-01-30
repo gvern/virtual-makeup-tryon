@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import logging
 from src.makeup_config import MAKEUP_TYPES_CONFIG
+from typing import List, Tuple, Dict, Any
 
 # Configure logging
 logging.basicConfig(
@@ -16,13 +17,16 @@ logging.basicConfig(
 
 class MakeupTransfer:
     def __init__(self):
+        """
+        Initializes the MakeupTransfer class.
+        """
         logging.info("MakeupTransfer initialized.")
-        self.makeup_colors = {}
+        self.makeup_colors: Dict[str, Tuple[float, float, float]] = {}
 
-    def convert_rgb_to_bgr(self, rgb_color):
+    def convert_rgb_to_bgr(self, rgb_color: Tuple[float, float, float]) -> Tuple[int, int, int]:
         """
         Converts an RGB color tuple to BGR.
-
+    
         :param rgb_color: Tuple of (R, G, B)
         :return: Tuple of (B, G, R)
         """
@@ -33,17 +37,17 @@ class MakeupTransfer:
         logging.debug(f"Converted RGB {rgb_color} to BGR {bgr}.")
         return bgr
 
-    def extract_makeup_color(self, reference_image, landmarks, makeup_types=['Lipstick']):
+    def extract_makeup_color(self, reference_image: np.ndarray, landmarks: List[Tuple[int, int]], makeup_types: List[str] =['Lipstick']) -> Dict[str, Tuple[float, float, float]]:
         """
         Extracts the average color for specified makeup types from the reference image.
-
+    
         :param reference_image: Original reference image in BGR
         :param landmarks: List of facial landmarks as (x, y) tuples
         :param makeup_types: List of makeup types to extract.
         :return: Dictionary of makeup types to BGR color tuples
         """
         logging.info(f"Extracting makeup colors for types: {makeup_types}")
-        makeup_colors = {}
+        makeup_colors: Dict[str, Tuple[float, float, float]] = {}
 
         for makeup_type in makeup_types:
             # Find the configuration for the makeup type
@@ -81,10 +85,10 @@ class MakeupTransfer:
 
         return makeup_colors
 
-    def apply_makeup(self, target_image, landmarks, makeup_params):
+    def apply_makeup(self, target_image: np.ndarray, landmarks: List[Tuple[int, int]], makeup_params: Dict[str, Dict[str, Any]]) -> np.ndarray:
         """
         Apply multiple makeup types to the target image based on landmarks and parameters.
-
+    
         :param target_image: Original target image in BGR
         :param landmarks: List of facial landmarks as (x, y) tuples
         :param makeup_params: Dictionary with makeup types as keys and parameters as values
@@ -127,17 +131,13 @@ class MakeupTransfer:
                 color_overlay = cv2.GaussianBlur(color_overlay, (15, 15), 0)
                 logging.debug(f"{makeup_type} color overlay created and blurred.")
 
-                # Blend the color overlay with the target image
-                blended = cv2.addWeighted(color_overlay, intensity, target_image, 1 - intensity, 0)
-                logging.debug(f"{makeup_type} color overlay blended with target image.")
+                # Create an alpha mask
+                alpha = intensity * (mask / 255.0)
+                alpha = alpha[:, :, np.newaxis]
 
-                # Create a boolean mask
-                makeup_mask = mask.astype(bool)
-                logging.debug(f"{makeup_type} makeup mask created with shape {makeup_mask.shape}.")
-
-                # Apply the blended makeup to the target image
-                makeup_applied[makeup_mask] = blended[makeup_mask]
-                logging.debug(f"Makeup applied for {makeup_type}.")
+                # Blend the color overlay with the target image using alpha
+                makeup_applied = (alpha * color_overlay + (1 - alpha) * makeup_applied).astype(np.uint8)
+                logging.debug(f"Makeup applied for {makeup_type} with alpha blending.")
 
             except Exception as e:
                 logging.error(f"Error applying {makeup_type}: {e}")
