@@ -55,7 +55,7 @@ class MakeupApp:
         self.color_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
         # Initialize color display canvases for each makeup type
-        self.makeup_types = ['Lipstick', 'Eyeshadow', 'Eyebrow', 'Foundation']
+        self.makeup_types = ['Lipstick', 'Blush', 'Eyebrow', 'Foundation']
         self.color_canvases = {}
         for i, makeup_type in enumerate(self.makeup_types):
             frame = tk.Frame(self.color_frame)

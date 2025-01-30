@@ -7,6 +7,8 @@ from assets.facemesh_landmarks import (
     FACEMESH_LIP_LOWER,
     FACEMESH_EYESHADOW_LEFT, 
     FACEMESH_EYESHADOW_RIGHT, 
+    FACEMESH_BLUSH_RIGHT,
+    FACEMESH_BLUSH_LEFT,
     FACEMESH_EYES,  # Imported FACEMESH_EYES
     FACEMESH_LEFT_EYEBROW, 
     FACEMESH_RIGHT_EYEBROW, 
@@ -52,7 +54,7 @@ def overlay_segmentation(image, landmarks, makeup_types=['Lipstick'], outline_co
     # Define specific colors for each makeup type for better distinction (optional)
     makeup_colors_visual = {
         'Lipstick': (0, 0, 255),       # Red
-        'Eyeshadow': (255, 0, 0),      # Blue
+        'Blush': (255, 0, 0),      # Blue
         'Eyebrow': (0, 255, 0),        # Green
         'Foundation': (128, 128, 128)  # Gray
     }
@@ -74,20 +76,20 @@ def overlay_segmentation(image, landmarks, makeup_types=['Lipstick'], outline_co
                 hull_upper = cv2.convexHull(np.array(upper_lip_landmarks))
                 cv2.fillConvexPoly(mask, hull_upper, 255)
                 logging.debug("Upper lipstick mask created.")
-            elif makeup_type == 'Eyeshadow':
-                # Left eyeshadow
-                left_eyeshadow_indices = get_unique_indices(FACEMESH_EYESHADOW_LEFT)
-                left_eyeshadow_landmarks = [landmarks[i] for i in left_eyeshadow_indices]
-                hull_left = cv2.convexHull(np.array(left_eyeshadow_landmarks))
+            elif makeup_type == 'Blush':
+                # Left blush
+                left_blush_indices = get_unique_indices(FACEMESH_BLUSH_LEFT)
+                left_blush_landmarks = [landmarks[i] for i in left_blush_indices]
+                hull_left = cv2.convexHull(np.array(left_blush_landmarks))
                 cv2.fillConvexPoly(mask, hull_left, 255)
-                logging.debug("Left eyeshadow mask created.")
+                logging.debug("Left blush mask created.")
 
-                # Right eyeshadow
-                right_eyeshadow_indices = get_unique_indices(FACEMESH_EYESHADOW_RIGHT)
-                right_eyeshadow_landmarks = [landmarks[i] for i in right_eyeshadow_indices]
-                hull_right = cv2.convexHull(np.array(right_eyeshadow_landmarks))
+                # Right blush
+                right_blush_indices = get_unique_indices(FACEMESH_BLUSH_RIGHT)
+                right_blush_landmarks = [landmarks[i] for i in right_blush_indices]
+                hull_right = cv2.convexHull(np.array(right_blush_landmarks))
                 cv2.fillConvexPoly(mask, hull_right, 255)
-                logging.debug("Right eyeshadow mask created.")
+                logging.debug("Right blush mask created.")
 
                 # # Create eyes mask to exclude inner eyes
                 # eyes_indices = get_unique_indices(FACEMESH_EYES)
