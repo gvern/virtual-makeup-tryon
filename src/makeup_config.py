@@ -12,8 +12,9 @@ MakeupTypeConfig = namedtuple('MakeupTypeConfig', [
 
 # Define configurations for each makeup type
 MAKEUP_TYPES_CONFIG = [
+    # --- Lipstick Upper ---
     MakeupTypeConfig(
-        name='Lipstick',
+        name='Lipstick Upper',
         facemesh_regions={
             'upper_lip': frozenset([
                 (61, 185),
@@ -36,7 +37,15 @@ MAKEUP_TYPES_CONFIG = [
                 (81, 80),
                 (80, 191),
                 (191, 78)
-            ]),
+            ])
+        },
+        default_color=(0, 0, 255),  # Red (BGR)
+        default_intensity=0.2
+    ),
+    # --- Lipstick Lower ---
+    MakeupTypeConfig(
+        name='Lipstick Lower',
+        facemesh_regions={
             'lower_lip': frozenset([
                 (61, 146),
                 (146, 91),
@@ -61,9 +70,10 @@ MAKEUP_TYPES_CONFIG = [
                 (78, 61)
             ])
         },
-        default_color=(0, 0, 255),  # Red in BGR
-        default_intensity=0.35
+        default_color=(0, 0, 255),  # Red (BGR)
+        default_intensity=0.2
     ),
+    # --- Blush (unchanged) ---
     MakeupTypeConfig(
         name='Blush',
         facemesh_regions={
@@ -87,9 +97,10 @@ MAKEUP_TYPES_CONFIG = [
                 (425, 266)
             ])
         },
-        default_color=(255, 0, 0),  # Blue in BGR
-        default_intensity=0.3
+        default_color=(255, 0, 0),  # Blue (BGR)
+        default_intensity=0.2
     ),
+    # --- Eyebrow (unchanged) ---
     MakeupTypeConfig(
         name='Eyebrow',
         facemesh_regions={
@@ -114,9 +125,10 @@ MAKEUP_TYPES_CONFIG = [
                 (66, 107)
             ])
         },
-        default_color=(0, 255, 0),  # Green in BGR
-        default_intensity=0.3
+        default_color=(0, 255, 0),  # Green (BGR)
+        default_intensity=0.25
     ),
+    # --- Foundation (unchanged) ---
     MakeupTypeConfig(
         name='Foundation',
         facemesh_regions={
@@ -158,7 +170,65 @@ MAKEUP_TYPES_CONFIG = [
                 (109, 10)
             ])
         },
-        default_color=(128, 128, 128),  # Gray in BGR
+        default_color=(128, 128, 128),  # Gray (BGR)
         default_intensity=0.2
+    ),
+    # --- Eyeliner Left ---
+    MakeupTypeConfig(
+        name='Eyeliner Left',
+        facemesh_regions={
+            'eyeliner': frozenset([
+                (243, 112),
+                (112, 26),
+                (26, 22),
+                (22, 23),
+                (23, 24),
+                (24, 110),
+                (110, 25),
+                (25, 226),
+                (226, 130),
+                (130, 33),
+                (33, 7),
+                (7, 163),
+                (163, 144),
+                (144, 145),
+                (145, 153),
+                (153, 154),
+                (154, 155),
+                (155, 133),
+                (133, 243)
+            ])
+        },
+        default_color=(0, 0, 0),  # Black (BGR)
+        default_intensity=0.5
+    ),
+    # --- Eyeliner Right ---
+    MakeupTypeConfig(
+        name='Eyeliner Right',
+        facemesh_regions={
+            'eyeliner': frozenset([
+                (463, 362),
+                (362, 382),
+                (382, 381),
+                (381, 380),
+                (380, 374),
+                (374, 373),
+                (373, 390),
+                (390, 249),
+                (249, 263),
+                (263, 359),
+                (359, 446),
+                (446, 255),
+                (255, 339),
+                (339, 254),
+                (254, 253),
+                (253, 252),
+                (252, 256),
+                (256, 341),
+                (341, 463)
+            ])
+        },
+        default_color=(0, 0, 0),  # Black (BGR)
+        default_intensity=0.5
     )
 ]

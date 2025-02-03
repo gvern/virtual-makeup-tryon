@@ -56,8 +56,16 @@ class MakeupApp:
         self.color_frame = tk.LabelFrame(root, text="Extracted Makeup Colors", padx=10, pady=10)
         self.color_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Initialize color display canvases for each makeup type
-        self.makeup_types = ['Lipstick', 'Blush', 'Eyebrow', 'Foundation']
+        # Updated list of makeup types including the new ones
+        self.makeup_types = [
+            'Lipstick Upper', 
+            'Lipstick Lower', 
+            'Blush', 
+            'Eyebrow', 
+            'Foundation', 
+            # 'Eyeliner Left', 
+            # 'Eyeliner Right'
+        ]
         self.color_canvases = {}
         for i, makeup_type in enumerate(self.makeup_types):
             frame = tk.Frame(self.color_frame)
