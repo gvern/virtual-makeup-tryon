@@ -47,7 +47,7 @@ gvern-virtual-makeup-tryon/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/gvern-virtual-makeup-tryon.git
+git clone https://github.com/gvern/virtual-makeup-tryon
 cd gvern-virtual-makeup-tryon
 ```
 ### 2. Create and Activate a Virtual Environment
